@@ -1,0 +1,47 @@
+name: CI/CD Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and Test Website
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Verify required website files exist
+        run: |
+          echo "Checking required website files..."
+          for file in index.html style.css script.js; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file $file is missing!" >&2
+              exit 1
+            fi
+            echo "✓ Found $file"
+          done
+          echo "All required files exist."
+
+      - name: Verify index.html content
+        run: |
+          echo "Verifying index.html content..."
+          if grep -q "DevOps Training" index.html; then
+            echo "✓ Verification passed: 'DevOps Training' found in index.html"
+          else
+            echo "Error: 'DevOps Training' not found in index.html" >&2
+            exit 1
+          fi
+
+      - name: Build and package website into dist
+        run: |
+          echo "Creating dist directory and packaging website..."
+          mkdir -p dist
+          cp index.html style.css script.js dist/
+          echo "✓ Successfully packaged website files into dist/"
+          echo "Packaged files:"
+          ls -la dist
