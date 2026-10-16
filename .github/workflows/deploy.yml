@@ -1,3 +1,4 @@
+
 name: CI/CD Deploy Website
 
 on:
@@ -8,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   build-and-test:
@@ -16,50 +16,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ap-south-1
 
       - name: Verify required website files exist
         run: |
-          echo "Checking required website files..."
           for file in index.html style.css script.js; do
             if [ ! -f "$file" ]; then
-              echo "Error: Required file $file is missing!" >&2
+              echo "Error: $file is missing!"
               exit 1
             fi
-            echo "✓ Found $file"
           done
           echo "All required files exist."
 
       - name: Verify index.html content
         run: |
-          echo "Verifying index.html content..."
-          if grep -q "DevOps Training" index.html; then
-            echo "✓ Verification passed: 'DevOps Training' found in index.html"
-          else
-            echo "Error: 'DevOps Training' not found in index.html" >&2
-            exit 1
-          fi
+          grep -q "DevOps Training" index.html
 
-      - name: Build and package website into dist
+      - name: Build website
         run: |
-          echo "Creating dist directory and packaging website..."
           mkdir -p dist
           cp index.html style.css script.js dist/
-          echo "✓ Successfully packaged website files into dist/"
-          echo "Packaged files:"
-          ls -la dist
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy to Amazon S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }}
+          aws s3 sync dist/ s3://devops-cicd-ash/ --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
