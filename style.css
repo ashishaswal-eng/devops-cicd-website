@@ -1,4 +1,4 @@
-:root{
+ :root{
   --bg: #f7fbff;
   --card: #ffffff;
   --text: #0f1724;
@@ -86,6 +86,14 @@ h1 {
   border-radius: 8px;
   display: inline-block;
   font-weight: 600;
+}
+
+/* Ensure the element is truly hidden when the HTML 'hidden' attribute is present.
+   The author stylesheet sets display, which can override the browser's default
+   behavior for [hidden]. By explicitly hiding .js-message[hidden] we make sure
+   the gray box doesn't show until the attribute is removed by JavaScript. */
+.js-message[hidden] {
+  display: none;
 }
 
 .footer {
